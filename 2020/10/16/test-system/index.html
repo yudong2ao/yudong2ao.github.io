@@ -20,15 +20,19 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://example.com/archives/2020/09/index.html">
+  <meta name="description" content="##重装系统后的hexo博客测试 重装系统后，本博文用于测试迁移后的博客系统能否正常工作，按照预想是可以正常工作的，而且本质上可以对git系统的使用和博客迁移做一个总结：  git的默认分支才是真正的核心，clone、push、pull的操作对象都是默认分支，而不一定是master分支。  hexo在部署时可以借由config文件指定[生成的静态网页文件]推送的git仓库和分支。正是由此才将hex">
+<meta property="og:type" content="article">
+<meta property="og:title" content="test system">
+<meta property="og:url" content="http://example.com/2020/10/16/test-system/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="##重装系统后的hexo博客测试 重装系统后，本博文用于测试迁移后的博客系统能否正常工作，按照预想是可以正常工作的，而且本质上可以对git系统的使用和博客迁移做一个总结：  git的默认分支才是真正的核心，clone、push、pull的操作对象都是默认分支，而不一定是master分支。  hexo在部署时可以借由config文件指定[生成的静态网页文件]推送的git仓库和分支。正是由此才将hex">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-10-16T13:02:32.000Z">
+<meta property="article:modified_time" content="2020-10-16T13:29:27.725Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/archives/2020/09/">
+<link rel="canonical" href="http://example.com/2020/10/16/test-system/">
 
 
 <script id="page-configurations">
@@ -36,12 +40,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'en'
   };
 </script>
 
-  <title>Archive | Hexo</title>
+  <title>test system | Hexo</title>
   
 
 
@@ -139,50 +143,95 @@
         <div class="content-wrap">
           
 
-          <div class="content archive">
+          <div class="content post posts-expand">
             
 
+    
   
   
-  
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <span class="collection-header">Um..! 3 posts in total. Keep on posting.</span>
-      </div>
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/10/16/test-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          test system
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-10-16 21:02:32 / Modified: 21:29:27" itemprop="dateCreated datePublished" datetime="2020-10-16T21:02:32+08:00">2020-10-16</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2020</span>
+        <p>##重装系统后的hexo博客测试</p>
+<p>重装系统后，本博文用于测试迁移后的博客系统能否正常工作，按照预想是可以正常工作的，而且本质上可以对git系统的使用和博客迁移做一个总结：</p>
+<ul>
+<li><p>git的默认分支才是真正的核心，clone、push、pull的操作对象都是默认分支，而不一定是master分支。</p>
+</li>
+<li><p>hexo在部署时可以借由config文件指定[生成的静态网页文件]推送的git仓库和分支。正是由此才将hexo博客的原始文件和编译后的静态文件存储于同一仓库的不同分支。</p>
+</li>
+<li><p>hexo在更换电脑或者重装系统或者在其他电脑部署时的操作如下：</p>
+<ol>
+<li><p><code>git clone git@github.com:....</code>克隆目标仓库（因为博客源文件时默认分支，所以本质上是拷贝了源文件）</p>
+</li>
+<li><p>进入克隆下来的文件夹执行<code>npm install</code> 安装相应的依赖（因为克隆下来的文件夹里已经有hexo init命令操作历史，<strong>所以这里不再执行</strong>）</p>
+</li>
+<li><p>在克隆下来的文件夹里执行<code>npm install hexo-deployer-git --save</code>安装hexo的部署插件</p>
+<p>说明：此处默认系统已安装git、nodejs、hexo并完成与github相关的配置。</p>
+</li>
+</ol>
+</li>
+</ul>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2020-09-30T20:54:00+08:00"
-              content="2020-09-30">
-          09-30
-        </time>
-      </div>
+      <footer class="post-footer">
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2020/09/30/hello-world-%E4%BD%A0%E5%A5%BD%E4%B8%96%E7%95%8C/" itemprop="url">
-            <span itemprop="name">hello world;你好世界</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/10/16/hello-world/" rel="prev" title="Hello World">
+      <i class="fa fa-chevron-left"></i> Hello World
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
   </article>
-
-
-    </div>
-  </div>
   
   
-  
-
   
 
 

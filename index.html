@@ -145,6 +145,83 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/10/16/test-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/10/16/test-system/" class="post-title-link" itemprop="url">test system</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-10-16 21:02:32 / Modified: 21:29:27" itemprop="dateCreated datePublished" datetime="2020-10-16T21:02:32+08:00">2020-10-16</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>##重装系统后的hexo博客测试</p>
+<p>重装系统后，本博文用于测试迁移后的博客系统能否正常工作，按照预想是可以正常工作的，而且本质上可以对git系统的使用和博客迁移做一个总结：</p>
+<ul>
+<li><p>git的默认分支才是真正的核心，clone、push、pull的操作对象都是默认分支，而不一定是master分支。</p>
+</li>
+<li><p>hexo在部署时可以借由config文件指定[生成的静态网页文件]推送的git仓库和分支。正是由此才将hexo博客的原始文件和编译后的静态文件存储于同一仓库的不同分支。</p>
+</li>
+<li><p>hexo在更换电脑或者重装系统或者在其他电脑部署时的操作如下：</p>
+<ol>
+<li><p><code>git clone git@github.com:....</code>克隆目标仓库（因为博客源文件时默认分支，所以本质上是拷贝了源文件）</p>
+</li>
+<li><p>进入克隆下来的文件夹执行<code>npm install</code> 安装相应的依赖（因为克隆下来的文件夹里已经有hexo init命令操作历史，<strong>所以这里不再执行</strong>）</p>
+</li>
+<li><p>在克隆下来的文件夹里执行<code>npm install hexo-deployer-git --save</code>安装hexo的部署插件</p>
+<p>说明：此处默认系统已安装git、nodejs、hexo并完成与github相关的配置。</p>
+</li>
+</ol>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="http://example.com/2020/10/16/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -343,7 +420,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">3</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
