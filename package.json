@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "prepare": "pnpm exec simple-git-hooks",
+    "prepare": "npx simple-git-hooks",
     "dev": "astro dev",
     "build": "astro check && astro build && pagefind --site dist",
     "preview": "astro preview",
@@ -61,8 +61,8 @@
     "simple-git-hooks": "^2.11.1"
   },
   "simple-git-hooks": {
-    "commit-msg": "pnpm exec commitlint --edit $1",
-    "pre-commit": "pnpm exec lint-staged"
+    "commit-msg": "npx commitlint --edit $1",
+    "pre-commit": "npx lint-staged"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx.astro,md,css,json}": "prettier --write"
