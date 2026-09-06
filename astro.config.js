@@ -20,7 +20,7 @@ import swup from '@swup/astro'
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://yudong2ao.github.io',
+  site: site.url,
   integrations: [
     tailwind(),
     react(),
