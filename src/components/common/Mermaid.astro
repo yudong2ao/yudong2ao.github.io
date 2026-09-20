@@ -329,16 +329,30 @@
       this.translateX = 0
       this.translateY = 0
 
-      // 计算视口尺寸与画板内容比
-      const vpWidth = this.viewport.clientWidth - 80
-      const vpHeight = this.viewport.clientHeight - 80
+      // 计算视口尺寸与画板内容比 (预留舒适内边距)
+      const vpWidth = Math.max(this.viewport.clientWidth - 96, 280)
+      const vpHeight = Math.max(this.viewport.clientHeight - 96, 200)
 
-      const svgBBox = svg.getBoundingClientRect()
-      const svgWidth = (svgBBox.width / this.scale) || 800
-      const svgHeight = (svgBBox.height / this.scale) || 600
+      // 优先从 viewBox 获取未缩放的原始真实尺寸
+      let svgWidth = 800
+      let svgHeight = 600
 
-      const fitScale = Math.min(vpWidth / svgWidth, vpHeight / svgHeight, 1.25)
-      this.scale = Math.max(Math.min(fitScale, 2.0), 0.45)
+      const viewBox = svg.getAttribute('viewBox')
+      if (viewBox) {
+        const parts = viewBox.trim().split(/[\s,]+/).map(Number)
+        if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+          svgWidth = parts[2]
+          svgHeight = parts[3]
+        }
+      } else {
+        const svgBBox = svg.getBoundingClientRect()
+        svgWidth = (svgBBox.width / this.scale) || 800
+        svgHeight = (svgBBox.height / this.scale) || 600
+      }
+
+      // 计算自适应最佳缩放比 (整图尽收眼底，避免过小图被强行过度放大)
+      const fitScale = Math.min(vpWidth / svgWidth, vpHeight / svgHeight)
+      this.scale = Math.max(Math.min(fitScale, 1.4), 0.35)
 
       this.updateTransform()
     }
@@ -370,17 +384,17 @@
       this.artboard.innerHTML = ''
       this.artboard.appendChild(cloneSvg)
 
-      // 默认放大至 200%，让读者瞬间看清大字与细节
-      this.scale = 2.0
+      // 初始归零
+      this.scale = 1
       this.translateX = 0
       this.translateY = 0
-      this.updateTransform()
 
-      // 显示遮罩
+      // 显示遮罩并在布局渲染就绪后执行精准屏幕自适应
       this.modal.classList.remove('hidden')
       requestAnimationFrame(() => {
         this.modal?.classList.remove('opacity-0')
         this.modal?.classList.add('opacity-100')
+        this.fitToScreen()
       })
     }
 
