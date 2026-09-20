@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <defs>
+    <linearGradient id="nbBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <linearGradient id="nbBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="nbSlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="nbAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="nbShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="url(#nbBg)" filter="url(#nbShadow)"/>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+  <path d="M 12 13.5 L 20 21.5" stroke="url(#nbBlue)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 28 13.5 L 20 21.5 L 20 29.5" stroke="url(#nbSlate)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="27.5" cy="9.2" r="3.4" fill="url(#nbAmber)"/>
+</svg>

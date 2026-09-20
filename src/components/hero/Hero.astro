@@ -1,5 +1,5 @@
 ---
-import { hero, author } from '@/config.json'
+import { hero } from '@/config.json'
 import { SocialList } from './SocialList'
 import Highlight from '@/components/Highlight.astro'
 ---
@@ -15,11 +15,16 @@ import Highlight from '@/components/Highlight.astro'
       <div class="text-sm text-secondary mt-3 text-center lg:text-left">{hero.description}</div>
       <SocialList className="mt-[60px]" client:load />
     </div>
-    <div class="mt-20 lg:mt-0">
+    <div class="mt-20 lg:mt-0 flex items-center justify-center">
       <div
-        class="size-[200px] lg:size-[300px] rounded-full overflow-hidden border border-primary bg-zinc-100 dark:bg-zinc-800"
+        class="size-[240px] sm:size-[280px] lg:size-[340px] select-none transition-transform duration-500 hover:scale-[1.02]"
       >
-        <img class="size-full" src={author.avatar} alt="Site owner avatar" loading="lazy" />
+        <img
+          class="size-full object-contain drop-shadow-sm"
+          src={hero.illustration || '/hero-illustration.jpg'}
+          alt={`${hero.name} - ${hero.bio}`}
+          loading="eager"
+        />
       </div>
     </div>
 

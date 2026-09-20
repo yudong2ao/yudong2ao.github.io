@@ -6,7 +6,8 @@
     "keywords": "玉东,博客,思考碎片,技术笔记,生活分享,摄影,自留地",
     "lang": "zh-CN",
     "favicon": "/favicon.ico",
-    "appleTouchIcon": "/apple-touch-icon.png"
+    "appleTouchIcon": "/apple-touch-icon.png",
+    "logo": "/brandmark.svg"
   },
   "author": {
     "name": "玉东",
@@ -17,6 +18,7 @@
     "name": "玉东の自留地",
     "bio": "记录零星思考，打磨技术逻辑，分享温热生活，定格光影瞬间。",
     "description": "思考碎片 · 技术笔记 · 生活分享 · 摄影内容",
+    "illustration": "/hero-illustration.jpg",
     "socials": [
       {
         "name": "Github",
