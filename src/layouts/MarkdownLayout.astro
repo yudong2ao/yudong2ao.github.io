@@ -4,6 +4,7 @@ import { HeadGradient } from '@/components/head-gradient'
 import Footer from '@/components/footer/Footer.astro'
 import { Header } from '@/components/header/Header'
 import { Provider } from '@/components/provider/Provider'
+import Mermaid from '@/components/common/Mermaid.astro'
 import 'katex/dist/katex.min.css'
 
 interface Props {
@@ -35,4 +36,5 @@ const { title, description, image, mdTitle, mdDescription, mdSlug } = Astro.prop
     </div>
   </main>
   <Footer />
+  <Mermaid />
 </Layout>

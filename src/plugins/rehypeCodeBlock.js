@@ -19,6 +19,28 @@ export function rehypeCodeBlock() {
         lang = classes[0].slice(9)
       }
 
+      if (lang === 'mermaid') {
+        const mermaidNode = h(
+          'div',
+          {
+            class:
+              'mermaid-wrapper my-8 flex justify-center overflow-x-auto rounded-xl bg-secondary/20 p-4 transition-colors',
+          },
+          [
+            h(
+              'pre',
+              {
+                class:
+                  'mermaid select-none text-center font-sans opacity-0 transition-opacity duration-300',
+              },
+              child.children,
+            ),
+          ],
+        )
+        parent.children[index] = mermaidNode
+        return
+      }
+
       const codeBlock = h(
         'div',
         {
