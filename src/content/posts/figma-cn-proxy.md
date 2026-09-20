@@ -34,23 +34,34 @@ UI/UX 设计师和前端开发者几乎每天都离不开 Figma。然而 Figma �
 经过多轮迭代，本项目彻底抛弃了“劫持并修改系统快捷方式参数”的传统做法，改用 **“透明代理 / 进程级底层代理”** 方案：
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as 用户操作
-    participant Figma as Figma.exe 桌面客户端
-    participant Driver as 驱动级代理 (ProxyBridge/WinDivert)
-    participant Mitm as 本地网关 (mitmdump :8089)
-    participant CDN as 第三方开源中文语言包
+flowchart TD
+    subgraph ClientLayer ["🎨 1. 客户端发起层"]
+        direction LR
+        U["👤 用户操作<br/>(快捷方式 / 双击 .fig / 自动更新重启)"] --> F["💻 Figma.exe 桌面应用<br/>发出界面与语言包网络请求"]
+    end
 
-    User->>Figma: 任意方式启动 (双击.fig / 浏览器唤起 / 软件自动重启)
-    Figma->>Driver: 发起界面语言包网络请求
-    Note over Driver: 驱动级精准识别目标进程 Figma.exe
-    Driver->>Mitm: 透明重定向至本地 127.0.0.1:8089
-    Mitm->>Mitm: figma_zh_cn.py 拦截并匹配目标 URL
-    Mitm->>CDN: 请求高精校对中文语言包资源
-    CDN-->>Mitm: 返回中文资源包
-    Mitm-->>Figma: 注水返回汉化内容
-    Figma-->>User: 呈现纯净丝滑的中文工作区！
+    subgraph KernelLayer ["🛡️ 2. 内核驱动拦截层 (WinDivert / ProxyBridge)"]
+        D1["🔍 底层网络封包监听器"] --> D2{"识别发起网络连接的进程<br/>是否为目标进程 Figma.exe ?"}
+        D2 -->|命中目标进程| D3["⚡ 透明流量重定向<br/>强制转向本地 127.0.0.1:8089"]
+        D2 -->|其它常规进程| D4["🌐 保持原生出网，零干扰放行"]
+    end
+
+    subgraph MitmLayer ["⚙️ 3. 本地轻量网关层 (mitmdump :8089)"]
+        direction LR
+        M1["🛰️ 本地透明监听端口"] --> M2["🐍 Python 扩展脚本<br/>figma_zh_cn.py"]
+        M2 --> M3{"URL 是否匹配<br/>Figma 界面多语言包?"}
+    end
+
+    subgraph CloudLayer ["🇨🇳 4. 资源注水与界面呈现"]
+        direction LR
+        CDN["📦 获取最新高精校对中文语言包"]
+        M3 -->|命中匹配: 实时注水替换| CDN
+        CDN -->|组装并回填数据流| F2["🎉 Figma 桌面端无感呈现纯净中文！"]
+        M3 -->|未命中: 原样透传放行| Origin["☁️ Figma 官方云端服务器"]
+    end
+
+    F ==> D1
+    D3 ==> M1
 ```
 
 无论你是通过开始菜单启动、双击 `.fig` 文件直接唤醒客户端，还是在软件内部点击“立即更新重启”，Figma 的网络流量都会在底层驱动被无缝捕获并重定向至本地网关。这从根本上彻底根除了 Figma 更新后参数丢失、汉化失效的顽疾。

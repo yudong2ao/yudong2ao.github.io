@@ -32,20 +32,28 @@ HealthEnhance 的核心，在于它**不是靠死板的倒计时，而是根据�
 
 ```mermaid
 flowchart TD
-    A["监听系统全局键鼠活跃度 (Win32 GetLastInputInfo)"] --> B{"检测到键鼠活动?"}
+    Start["🖱️ 周期性检测：Win32 GetLastInputInfo<br/>获取全局键鼠最后物理操作时间戳"] --> CheckInput{"🖥️ 当前是否有键鼠物理输入？"}
 
-    B --> |"是 (使用电脑中)"| C["计算真实流逝时间并累加工时"]
-    C --> D{"两次循环物理时间差 ≥ 5分钟?"}
-    D --> |"是 (电脑刚才睡眠/合盖挂起)"| E["视为已完成休息，工时清零"]
-    D --> |"否 (正常连续工作中)"| F{"连续工时达到 60分钟?"}
-    F --> |"是"| G["触发 Windows 原生 Toast 提醒 (5秒自隐)"]
-    F --> |"否"| A
+    %% 左侧分支：工作状态分支
+    subgraph ActiveBranch ["💼 工作状态链路 (正在专注使用电脑)"]
+        CheckInput -->|是: 处于工作期| CalcWork["⏱️ 计算真实流逝物理时长<br/>严谨累加当前连续工作时间"]
+        CalcWork --> CheckSleep{"💤 时间差 ≥ 5分钟?<br/>(判定电脑是否合盖挂起/睡眠)"}
+        CheckSleep -->|否: 正常持续工作中| CheckHour{"⏰ 累计连续工时 ≥ 60分钟?"}
+        CheckHour -->|是: 达到久坐阈值| Notify["🔔 触发 Windows 原生 Toast 提醒<br/>温和提示起立喝水/极目远眺 (5秒自隐)"]
+    end
 
-    B --> |"否 (离开电脑状态)"| H{"空闲时长 ≥ 5分钟?"}
-    H --> |"是 (中途开会/休息超过5分钟)"| E
-    H --> |"否 (接水/洗手间，短暂停顿)"| I["保持当前工时累计，容错防抖"]
-    I --> A
-    E --> A
+    %% 右侧分支：空闲/离开分支
+    subgraph IdleBranch ["☕ 离座与防抖链路 (离开或未操作电脑)"]
+        CheckInput -->|否: 处于空闲期| CheckIdle{"⏳ 空闲时长 ≥ 5分钟?<br/>(判定离座开会还是去洗手间短暂停顿)"}
+        CheckIdle -->|否: 短暂离开不足5分钟| Keep["🛡️ 保持当前工时累计<br/>智能防抖，避免稍作停顿即被清零"]
+        CheckIdle -->|是: 真正离席休息超过5分钟| Reset["🌿 判定已完成有效阶段性休息<br/>连续工时计时归零，重新守护"]
+    end
+
+    CheckSleep -->|是: 刚才电脑曾睡眠| Reset
+    CheckHour -->|否: 继续保持专注| NextCycle["🔄 维持低功耗静默守护，进入下一轮 5 秒时钟周期"]
+    Notify --> NextCycle
+    Keep --> NextCycle
+    Reset --> NextCycle
 ```
 
 1. **真实工作判定**：只要键盘或鼠标处于活跃状态，就判定为处于工作专注期；

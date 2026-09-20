@@ -70,10 +70,24 @@ Windows 沙盒本身提供了基于标准 XML 语法的 `.wsb`（Windows Sandbox
 
 ```mermaid
 flowchart TD
-    A["右键 SandboxConfig.wsb 创建快捷方式"] --> B["重命名为 '中文沙盒' 或 'Windows沙盒'"]
-    B --> C["Win + R 输入 shell:programs 打开应用目录"]
-    C --> D["将快捷方式拖入该目录"]
-    D --> E["按键盘 Win 键搜索 '中文沙盒' 回车秒开！"]
+    subgraph LaunchFlow ["🚀 1. 系统级快捷唤起链路"]
+        direction LR
+        U1["⌨️ 随手按键盘 Win 键<br/>键入「中文沙盒」即刻回车"] --> U2["📑 调起 SandboxConfig.wsb<br/>(Windows 官方沙盒架构配置)"]
+    end
+
+    subgraph SandboxEnv ["📦 2. 虚拟化隔离与目录安全挂载"]
+        direction LR
+        S1["🛡️ 宿主机工具脚本目录<br/>(只读安全隔离映射)"] -->|HostFolder 挂载| S2["💻 沙盒内独立虚拟空间<br/>(挂载至 C:\\SandboxTools)"]
+    end
+
+    subgraph AutoExec ["⚡ 3. 自动化登录注入 (LogonCommand)"]
+        direction LR
+        E1["📜 静默触发初始化脚本<br/>(无黑框后台守护执行)"] --> E2["🀄 注入系统注册表与语言环境<br/>无感激活原生中文输入法"]
+        E2 --> E3["🎉 秒级就绪！<br/>拥有可打中文的纯净一次性系统"]
+    end
+
+    U2 ==> |启动 Hyper-V 极速轻量容器| S1
+    S2 ==> |登录时由系统自动调用| E1
 ```
 
 1. **创建快捷方式**：找到下载好的 `SandboxConfig.wsb` 文件，右键点击选择“创建快捷方式”；

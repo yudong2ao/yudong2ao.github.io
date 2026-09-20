@@ -42,26 +42,33 @@ draft: false
 
 ```mermaid
 flowchart TD
-    subgraph Apps ["💻 1. 系统应用层 (发起网络连接)"]
+    subgraph AppLayer ["💻 1. 系统应用接入层 (网络连接发起者)"]
         direction LR
-        A1["常规浏览器<br/>Chrome / Edge"]
-        A2["指定应用<br/>Figma.exe / Git / CLI"]
-        A3["内网直连<br/>微信 / 局域网传输"]
+        A1["🎯 白名单目标进程<br/>(Figma / Git / 终端CLI)"]
+        A2["💬 内网直连软件<br/>(微信 / 钉钉 / 局域网传输)"]
+        A3["🌐 常规外网应用<br/>(Chrome / Edge 浏览器)"]
     end
 
-    subgraph Driver ["🛡️ 2. WinDivert 驱动层 (内核拦截识别)"]
-        Router{"进程名称是否命中规则?"}
+    subgraph CoreLayer ["🛡️ 2. WinDivert 驱动与路由核心 (底层内核拦截)"]
+        direction TB
+        Filter["🔍 WinDivert 底层网络封包监听器"]
+        Config["📋 规则匹配引擎 (动态加载 config.json)"]
+        Decision{"⚙️ 进程名称与网络端口<br/>是否命中代理规则？"}
+        Filter --> Config --> Decision
     end
 
-    subgraph Output ["🌐 3. 流量出网层 (智能分流)"]
+    subgraph OutputLayer ["🌐 3. 智能流量出网层 (双轨分流)"]
         direction LR
-        Proxy["SOCKS5 / HTTP 代理通道<br/>(智能翻山加速)"]
-        Direct["本地网卡直接出网<br/>(零延迟直连)"]
+        ProxyOut["🚀 SOCKS5 / HTTP 代理通道<br/>(驱动级透明劫持加速)"]
+        DirectOut["⚡ 本地物理网卡直接出网<br/>(零延迟 / 零损耗原生直连)"]
     end
 
-    Apps ==> |底层网络封包流| Driver
-    Router --> |命中规则| Proxy
-    Router --> |未命中规则| Direct
+    A1 ==> |网络数据流| Filter
+    A2 ==> |网络数据流| Filter
+    A3 ==> |网络数据流| Filter
+
+    Decision ==>|命中规则| ProxyOut
+    Decision ==>|未命中规则| DirectOut
 ```
 
 ---

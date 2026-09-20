@@ -370,15 +370,17 @@
       this.artboard.innerHTML = ''
       this.artboard.appendChild(cloneSvg)
 
-      // 锁定页面滚动
-      document.body.style.overflow = 'hidden'
+      // 默认放大至 200%，让读者瞬间看清大字与细节
+      this.scale = 2.0
+      this.translateX = 0
+      this.translateY = 0
+      this.updateTransform()
 
       // 显示遮罩
       this.modal.classList.remove('hidden')
       requestAnimationFrame(() => {
         this.modal?.classList.remove('opacity-0')
         this.modal?.classList.add('opacity-100')
-        this.fitToScreen()
       })
     }
 
@@ -423,11 +425,19 @@
         theme: isDark ? 'dark' : 'default',
         fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         securityLevel: 'loose',
+        flowchart: {
+          nodeSpacing: 45,
+          rankSpacing: 55,
+          curve: 'basis',
+          padding: 16,
+          useMaxWidth: false,
+          htmlLabels: true,
+        },
         themeVariables: isDark ? {
           darkMode: true,
           background: 'transparent',
           fontFamily: 'inherit',
-          fontSize: '14px',
+          fontSize: '16px',
           // 主节点
           primaryColor: '#1e293b',
           primaryTextColor: '#f8fafc',
@@ -446,7 +456,7 @@
           darkMode: false,
           background: 'transparent',
           fontFamily: 'inherit',
-          fontSize: '14px',
+          fontSize: '16px',
           // 主节点
           primaryColor: '#ffffff',
           primaryTextColor: '#0f172a',
@@ -685,26 +695,45 @@
   }
 
   /* ------------------------------------------------------------- */
-  /* 博文正文内 Mermaid 图表高对比度美化 */
+  /* 博文正文内与全屏画板内 Mermaid 图表高对比度美化与尺寸升级 */
   /* ------------------------------------------------------------- */
-  .mermaid-wrapper svg .cluster rect {
-    fill: rgba(148, 163, 184, 0.08) !important;
-    stroke: rgba(148, 163, 184, 0.3) !important;
-    stroke-width: 1.5px !important;
-    rx: 8px !important;
+  .mermaid-wrapper svg,
+  .lightbox-artboard svg {
+    font-size: 16px !important;
+  }
+  .mermaid-wrapper svg .cluster rect,
+  .lightbox-artboard svg .cluster rect {
+    stroke-width: 2px !important;
+    rx: 10px !important;
+  }
+  .mermaid-wrapper svg .cluster .nodeLabel,
+  .lightbox-artboard svg .cluster .nodeLabel {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
   }
   .mermaid-wrapper svg .node rect,
-  .mermaid-wrapper svg .node polygon {
-    stroke-width: 1.5px !important;
-    rx: 6px !important;
-  }
-  .mermaid-wrapper svg .node .label {
-    font-weight: 600 !important;
-  }
-  .mermaid-wrapper svg .edgePath .path {
+  .mermaid-wrapper svg .node polygon,
+  .lightbox-artboard svg .node rect,
+  .lightbox-artboard svg .node polygon {
     stroke-width: 2px !important;
+    rx: 8px !important;
   }
-  .mermaid-wrapper svg .edgeLabel span {
+  .mermaid-wrapper svg .node .label,
+  .lightbox-artboard svg .node .label {
+    font-size: 15px !important;
     font-weight: 600 !important;
+    line-height: 1.4 !important;
+  }
+  .mermaid-wrapper svg .edgePath .path,
+  .lightbox-artboard svg .edgePath .path {
+    stroke-width: 2.5px !important;
+  }
+  .mermaid-wrapper svg .edgeLabel span,
+  .lightbox-artboard svg .edgeLabel span {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
   }
 </style>

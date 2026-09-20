@@ -37,13 +37,17 @@ draft: false
 
 ```mermaid
 flowchart TD
-    A["按键按下事件 (WM_KEYDOWN)"] --> B{"底层低级键盘钩子 (WH_KEYBOARD_LL)"}
-    B --> |非目标键| C["CallNextHookEx (直接放行)"]
-    B --> |目标键 (如 Backspace)| D["计算时间差 Δt = 当前时间 - 上次时间"]
-    D --> E{"Δt < 80ms ?"}
-    E --> |"是 (判定为机械连击抖动)"| F["返回 1 (直接丢弃并阻止传递)"]
-    E --> |"否 (正常人类意图输入)"| G["更新上次按键时间戳"]
-    G --> C
+    K1["⌨️ 键盘产生物理击键事件 (WM_KEYDOWN)"] --> Hook{"🛡️ WH_KEYBOARD_LL<br/>Windows 全局低级底层键盘钩子"}
+
+    Hook -->|按键未在监控名单中| Pass["⚡ CallNextHookEx<br/>非目标按键，微秒级直接原样放行"]
+    Hook -->|命中监控按键 (如 Backspace)| Calc["⏱️ 高精度时间戳差值计算<br/>计算两次按键间隔 Δt = 当前时间 - 上次时间"]
+
+    Calc --> Decision{"⚖️ 物理接触抖动判定<br/>间隔差值 Δt < 80ms (可配置) ?"}
+
+    Decision -->|是: 判定为轴体微动故障杂波| Drop["🚫 拦截丢弃 (返回 1)<br/>底层阻断该按键向系统分发，消除误连击"]
+    Decision -->|否: 判定为人类正常连击意图| Accept["✅ 确认为真实有效按键<br/>刷新上次按键基准时间戳"]
+
+    Accept --> Pass
 ```
 
 ---
