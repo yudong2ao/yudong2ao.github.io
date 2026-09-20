@@ -59,13 +59,13 @@ flowchart TD
     end
 
     subgraph SystemUI ["🖥️ 3. 系统反馈层 (Windows 原生通知)"]
-        direction LR
-        ActionCenter["Windows 操作中心<br/>(Win + N 实时进度)"]
-        Toast["原生 Toast 横幅弹窗<br/>(完成/异常即时提醒)"]
+        ActionCenter["Windows 操作中心 (Win + N 实时进度)"]
+        Toast["原生 Toast 横幅弹窗 (完成/异常即时提醒)"]
     end
 
-    UI ==> |HTTP Local API 派发下载指令| Server
-    Server ==> |WinRT 原生底层接口| SystemUI
+    UI ==> |HTTP Local API 派发指令| Server
+    Server ==> |WinRT 实时进度更新| ActionCenter
+    Server ==> |WinRT 结果横幅弹窗| Toast
 ```
 
 1. **前端（Tampermonkey 油猴脚本）**：负责拦截并提取网页流媒体网络请求，智能匹配音视频流、封装格式与清晰度选项，渲染低干扰悬浮控件；
