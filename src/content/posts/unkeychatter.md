@@ -8,69 +8,74 @@ comments: true
 draft: false
 ---
 
-> **极客自救**：物理键盘老化抖动先别急着掏钱换键盘。用几十行底层 Hook 代码，给老化按键加上精准的软件防抖滤波。
-
-## 前言
-
-用过几年笔记本的朋友，很多都经历过键盘“硬件衰老”的折磨：
-笔记本键盘的薄膜或剪刀脚机械结构因为灰尘积攒或金属弹片触点氧化，开始出现**按键抖动连击（Key Chatter）**。
-
-我手头那台主力轻薄本就遇到了这个噩梦：**退格键（Backspace）严重连击**。
-在写代码或编辑长文时，本想按一下退格删掉一个错别字，结果硬件瞬间产生物理抖动连击，一整行甚至小半段文字瞬间被误删光！
-
-去售后换一套键盘 C 面不仅价格昂贵，还要把整机大卸八块。既然物理按键的抖动特征是“在极短毫秒内产生两次非人类极限的连续脉冲”，那么**为什么不能用软件在底层输入流中把它过滤掉？**
-
-带着这股极客执念，我编写了 **unkeychatter**。
+> **极客自救指南：** 笔记本物理键盘老化连击先别急着花大钱换键盘。用几十行底层全局 Hook 代码，给老化按键注入精准的软件防抖滤波算法。
 
 ---
 
-## 核心原理：底层全局钩子与防抖时序
+## 📌 真实场景：退格键连击的噩梦
 
-人类正常快速敲击同一按键的最快极限通常在 100ms 以上，而物理机械接触不良引起的杂波震荡（Chatter），间隔往往在 **几十毫秒以内**。
+用过几年笔记本电脑的朋友，不少都遭遇过键盘“硬件衰老”的折磨：
+笔记本键盘的剪刀脚或薄膜触点因为微尘积攒或金属弹片轻微氧化，在按键弹起或按压的瞬间会产生微弱的机械回弹震荡，导致系统接收到多次触发信号 —— 这在硬件工程上被称为 **按键抖动连击（Key Chatter）**。
 
-因此，只要在系统真正将按键分发给应用程序之前，计算连续两次按下的时间差：
+我手头那台使用了多年的主力轻薄本就遇到了这个噩梦：**退格键（Backspace）严重连击**。  
+在写代码或长文输入时，本想按一下退格删掉一个错别字，结果硬件由于机械抖动，在一瞬间连续触发了 3~5 次按键事件，整行代码瞬间被误删光！
 
-- 如果时间差 $\Delta t < 80\text{ms}$，判定为机械杂波，直接予以拦截丢弃；
-- 如果时间差 $\Delta t \ge 80\text{ms}$，放行按键并更新时间戳。
+去官方售后更换整套键盘 C 面不仅价格昂贵，而且需要将整机全面拆解，费时费力。既然物理按键发生机械连击的特征是**“在极短的时间窗口内（如数十毫秒）产生了非人类极限的连续信号脉冲”**，那么**为什么不能在系统输入层用纯软件算法把它拦截过滤掉？**
 
-```text
-按键触发 (WM_KEYDOWN)
-         │
-         ▼
-[底层键盘钩子 WH_KEYBOARD_LL]
-         │
-         ├─ 是否为 Backspace 键？
-         │   ├── 否 ──> 直接放行 (CallNextHookEx)
-         │   └── 是 ──> 计算与上次按下间隔 Δt
-         │               ├── Δt < 80ms (物理抖动) ──> 拦截丢弃 (Return 1)
-         │               └── Δt ≥ 80ms (正常输入) ──> 放行并更新时间戳
+由此，我编写了轻量且硬核的 **unkeychatter**。
+
+---
+
+## 🔬 防抖算法原理：时序窗口拦截
+
+人类进行快速连续击键时，手指的机械动作极限通常在 **100 毫秒以上**；而金属接触不良引起的物理杂波（Chatter），连续脉冲间隔往往只有 **10 ~ 50 毫秒**。
+
+因此，只要在系统将按键消息派发给上层应用软件之前，测量连续两次击键的真实时间差 $\Delta t$：
+
+- 若时间差 $\Delta t < 80\text{ms}$：判定为机械杂波或接触不良引起的抖动，直接拦截丢弃该消息；
+- 若时间差 $\Delta t \ge 80\text{ms}$：判定为用户的正常意图输入，予以放行并刷新时间戳。
+
+```mermaid
+flowchart TD
+    A["按键按下事件 (WM_KEYDOWN)"] --> B{"底层低级键盘钩子 (WH_KEYBOARD_LL)"}
+    B --> |非目标键| C["CallNextHookEx (直接放行)"]
+    B --> |目标键 (如 Backspace)| D["计算时间差 Δt = 当前时间 - 上次时间"]
+    D --> E{"Δt < 80ms ?"}
+    E --> |"是 (判定为机械连击抖动)"| F["返回 1 (直接丢弃并阻止传递)"]
+    E --> |"否 (正常人类意图输入)"| G["更新上次按键时间戳"]
+    G --> C
 ```
 
 ---
 
-## 技术亮点：不仅是防抖，更兼顾极致功耗
+## 💡 深度技术架构：不仅是防抖，更有智能休眠
 
-很多常驻后台的按键拦截程序之所以令人诟病，是因为粗暴的死循环会占用 CPU 甚至阻碍系统进入低功耗睡眠。在 `unkeychatter` 中，我加入了深度优化：
+许多常驻后台的按键拦截脚本之所以让人敬而远之，是因为粗暴的死循环会持续消耗 CPU 资源，甚至会阻碍笔记本电脑进入低功耗待机睡眠。在 `unkeychatter` 中，我引入了两大核心技术：
 
-### 1. PowerShell 混合 C# P/Invoke
+### 1. PowerShell 混合编译 C# P/Invoke
 
-直接在 PowerShell 中通过 `Add-Type` 动态编译 C# 代码，调用 Win32 原生 API（`SetWindowsHookEx` 与 `UnhookWindowsHookEx`），获得与 C/C++ 等同的零延迟拦截性能。
+脚本没有使用任何低效的高层抽象，而是直接利用 PowerShell 的 `Add-Type` 动态即时编译 C# 代码，调用 Windows Win32 底层 API：
 
-### 2. 智能休眠注销机制（Idle Smart Sleep）
+- `SetWindowsHookEx(WH_KEYBOARD_LL)`：挂载全局低级键盘钩子，获得与 C/C++ 完全等同的原生零延迟拦截性能；
+- `UnhookWindowsHookEx`：安全注销并释放钩子句柄。
 
-结合 Win32 的 `GetLastInputInfo` 监听系统全局空闲时间：
+### 2. 空闲智能休眠与按需激活（Idle Smart Sleep）
 
-- 当检测到用户连续 **60 秒** 无任何键盘鼠标操作时，脚本会自动调用 `UnhookWindowsHookEx` **注销键盘钩子**，让系统进入完全无开销的休眠状态；
-- 当用户重新敲击键盘或移动鼠标时，脚本毫秒级重新挂载钩子恢复守护，做到了“平时零开销，打字即守护”。
+结合 Win32 的 `GetLastInputInfo` 监听系统全局键鼠空闲时间：
+
+- **无感休眠**：当检测到用户连续 **60 秒** 没有操作键盘鼠标时，脚本会自动调用 `UnhookWindowsHookEx` **注销键盘钩子**，让系统进入 0 开销的完全休眠状态；
+- **秒级唤醒**：一旦检测到用户恢复打字，脚本会在毫秒级重新挂载钩子恢复守护，真正做到“打字即守护，闲置零功耗”。
 
 ---
 
-## 源码核心精髓展示
+## 💻 核心实现代码展示
 
-核心判定逻辑精炼直观：
+C# 底层防抖过滤逻辑如下：
 
 ```csharp
-public const int Interval = 80; // 阻止重复按键的防抖时间阈值（毫秒）
+public const int Interval = 80;      // 阻止重复按键的时间间隔（毫秒）
+public static Stopwatch Stopwatch = Stopwatch.StartNew();
+public static long LastBackspaceTime = 0;
 
 public static IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam) {
     if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN) {
@@ -80,31 +85,43 @@ public static IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lPara
         if (keyInfo.vkCode == VK_BACK) {
             long elapsedTime = Stopwatch.ElapsedMilliseconds - LastBackspaceTime;
             if (elapsedTime < Interval) {
-                // 间隔低于 80ms，判定为物理抖动，拦截该按键消息
+                // 间隔小于 80 毫秒，判定为硬件抖动，直接拦截
                 return (IntPtr)1;
             }
             LastBackspaceTime = Stopwatch.ElapsedMilliseconds;
         }
     }
-    // 继续正常传递按键事件
+    // 正常传递其他按键
     return CallNextHookEx(HookId, nCode, wParam, lParam);
 }
 ```
 
 ---
 
-## 快速使用与开机自启
+## 🚀 部署与开机自启指南
 
-1. 下载仓库中的 `unkeychatter-v1.2.ps1` 和 `UnKeyChtter.vbs` 到本地；
-2. 确认 `UnKeyChtter.vbs` 中的脚本路径与实际存放位置一致；
-3. 为 `UnKeyChtter.vbs` 创建快捷方式，按下 <kbd>Win</kbd> + <kbd>R</kbd> 输入 `shell:startup`，将快捷方式放入自启动目录；
-4. 双击运行一次，退格键连击顽疾瞬间消失，整台笔记本满血复活！
+### 1. 下载脚本
+
+下载项目中的 `unkeychatter-v1.2.ps1` 和配套启动器 `UnKeyChtter.vbs` 保存在本地任意目录。
+
+### 2. 配置开机自启
+
+1. 右键为 `UnKeyChtter.vbs` 创建快捷方式；
+2. 按下快捷键 <kbd>Win</kbd> + <kbd>R</kbd> 输入 `shell:startup` 打开自启文件夹；
+3. 将快捷方式放入该目录；
+4. 双击运行一次启动器，恶心的按键连击抖动当场消失，整台笔记本瞬间满血复活！
+
+---
+
+## ⚙️ 进阶定制：针对其他按键防抖
+
+如果你遇到的是其他按键（例如空格键 `Space`、回车键 `Enter` 或特定字母键）出现物理连击，只需打开 `unkeychatter-v1.2.ps1`，将 `VK_BACK` 修改为对应按键的虚拟键码（如 `VK_SPACE = 0x20`、`VK_RETURN = 0x0D`）即可同样享受精准的防抖滤波保护。
 
 ---
 
 ## 获取源码与项目地址
 
-源码完全开源，如果你遇到其他按键（如空格或回车键）连击，也只需在代码中修改 `vkCode` 即可按需定制：
+完整项目源码已在 GitHub 开源：
 
 👉 **GitHub 仓库**：[yudong2ao/unkeychatter](https://github.com/yudong2ao/unkeychatter)
 
