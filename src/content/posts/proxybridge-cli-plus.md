@@ -41,28 +41,27 @@ draft: false
 ## 🚀 流量分流拓扑与架构
 
 ```mermaid
-flowchart LR
-    subgraph Apps ["💻 系统进程层"]
-        A1["Chrome / 浏览器"]
-        A2["Figma.exe (设计客户端)"]
-        A3["微信 / 内网工具 / 局域网"]
+flowchart TD
+    subgraph Apps ["💻 1. 系统应用层 (发起网络连接)"]
+        direction LR
+        A1["常规浏览器<br/>Chrome / Edge"]
+        A2["指定应用<br/>Figma.exe / Git / CLI"]
+        A3["内网直连<br/>微信 / 局域网传输"]
     end
 
-    subgraph Driver ["🛡️ WinDivert 内核网络驱动"]
-        Router{"进程名称匹配?"}
+    subgraph Driver ["🛡️ 2. WinDivert 驱动层 (内核拦截识别)"]
+        Router{"进程名称是否命中规则?"}
     end
 
-    subgraph Output ["🌐 出网分流"]
-        Proxy["SOCKS5 / HTTP 代理节点 (走代理)"]
-        Direct["本地网卡直接出网 (直连)"]
+    subgraph Output ["🌐 3. 流量出网层 (智能分流)"]
+        direction LR
+        Proxy["SOCKS5 / HTTP 代理通道<br/>(智能翻山加速)"]
+        Direct["本地网卡直接出网<br/>(零延迟直连)"]
     end
 
-    A1 --> Router
-    A2 --> Router
-    A3 --> Router
-
-    Router --> |匹配白名单进程| Proxy
-    Router --> |未匹配规则| Direct
+    Apps ==> |底层网络封包流| Driver
+    Router --> |命中规则| Proxy
+    Router --> |未命中规则| Direct
 ```
 
 ---

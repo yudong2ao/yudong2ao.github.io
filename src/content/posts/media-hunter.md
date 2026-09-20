@@ -47,26 +47,25 @@ MediaHunter 采用**“前端轻量感知 + 本地服务网关 + 原生系统通
 
 ```mermaid
 flowchart TD
-    subgraph Browser ["🌐 浏览器环境"]
-        Page["网页音视频播放"] --> |动态嗅探| Hook["油猴核心脚本 (MediaHunter.user.js)"]
+    subgraph Browser ["🌐 1. 浏览器感知层 (Tampermonkey)"]
+        Page["网页音视频播放页面"] --> |动态嗅探拦截| Hook["油猴核心脚本 (MediaHunter.user.js)"]
         Hook --> |轻量交互| UI["紫色悬浮胶囊 & 嗅探解析面板"]
     end
 
-    subgraph LocalGateway ["💻 本地轻量网关 (Local API)"]
-        Server["静默服务网关 (Server.ps1 / VBS)"]
-        Engine["yt-dlp + ffmpeg + deno"]
-        Server --> Engine
+    subgraph LocalGateway ["💻 2. 本地网关层 (Local API & 引擎)"]
+        Server["本地轻量 API 服务 (Server.ps1 / VBS 静默守护)"]
+        Engine["加速与转码引擎 (yt-dlp + ffmpeg + deno)"]
+        Server <--> |任务派发与流监听| Engine
     end
 
-    subgraph SystemUI ["🖥️ Windows 系统原生层"]
-        ActionCenter["Windows 通知中心 (Win + N 实时进度)"]
-        Toast["完成/异常横幅 Toast 强弹窗"]
+    subgraph SystemUI ["🖥️ 3. 系统反馈层 (Windows 原生通知)"]
+        direction LR
+        ActionCenter["Windows 操作中心<br/>(Win + N 实时进度)"]
+        Toast["原生 Toast 横幅弹窗<br/>(完成/异常即时提醒)"]
     end
 
-    UI --> |HTTP Local API 派发指令| Server
-    Engine --> |管道流数据监听| Server
-    Server --> |WinRT 原生 API| ActionCenter
-    Server --> |WinRT 原生 API| Toast
+    UI ==> |HTTP Local API 派发下载指令| Server
+    Server ==> |WinRT 原生底层接口| SystemUI
 ```
 
 1. **前端（Tampermonkey 油猴脚本）**：负责拦截并提取网页流媒体网络请求，智能匹配音视频流、封装格式与清晰度选项，渲染低干扰悬浮控件；

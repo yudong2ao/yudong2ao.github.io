@@ -24,7 +24,7 @@ export function rehypeCodeBlock() {
           'div',
           {
             class:
-              'mermaid-wrapper my-8 flex justify-center overflow-x-auto rounded-xl bg-secondary/20 p-4 transition-colors',
+              'mermaid-wrapper group relative my-8 flex justify-center overflow-x-auto rounded-xl bg-secondary/10 hover:bg-secondary/20 p-6 transition-all duration-300 border border-secondary/20 shadow-sm cursor-zoom-in',
           },
           [
             h(

@@ -1,5 +1,5 @@
 ---
-// 客户端 Mermaid 渲染组件
+// 客户端 Mermaid 渲染与全屏交互式灯箱组件
 ---
 
 <script>
@@ -13,13 +13,349 @@
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   }
 
-  // 动态加载并渲染 Mermaid
+  // 全屏交互灯箱管理器
+  class MermaidLightbox {
+    private modal: HTMLElement | null = null
+    private viewport: HTMLElement | null = null
+    private stage: HTMLElement | null = null
+    private scaleIndicator: HTMLElement | null = null
+
+    private scale = 1
+    private translateX = 0
+    private translateY = 0
+    private isDragging = false
+    private dragStartX = 0
+    private dragStartY = 0
+    private hasMoved = false
+
+    // 触摸双指缩放记录
+    private initialTouchDistance = 0
+    private initialTouchScale = 1
+
+    constructor() {
+      this.initModal()
+    }
+
+    private initModal() {
+      if (document.getElementById('mermaid-lightbox-modal')) {
+        this.modal = document.getElementById('mermaid-lightbox-modal')
+        this.viewport = this.modal?.querySelector('.lightbox-viewport') || null
+        this.stage = this.modal?.querySelector('.lightbox-stage') || null
+        this.scaleIndicator = this.modal?.querySelector('.lightbox-scale-text') || null
+        return
+      }
+
+      const modalHtml = `
+        <div id="mermaid-lightbox-modal" class="fixed inset-0 z-[99999] hidden select-none bg-black/85 backdrop-blur-md opacity-0 transition-opacity duration-300 flex flex-col items-center justify-between p-4" role="dialog" aria-modal="true" aria-label="图表全屏查看器">
+          <!-- 顶部工具栏 -->
+          <header class="w-full flex items-center justify-between max-w-4xl px-4 py-2 z-10">
+            <div class="flex items-center gap-2 text-white/90 text-sm font-medium tracking-wide">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+              <span>图表全屏交互预览</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 bg-white/10 dark:bg-zinc-800/80 backdrop-blur-md border border-white/15 dark:border-zinc-700/60 rounded-full px-3 py-1 shadow-lg text-white">
+              <button type="button" class="btn-zoom-out p-1.5 hover:bg-white/15 rounded-full transition-colors" title="缩小 (-)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+              </button>
+              <button type="button" class="lightbox-scale-text px-2 py-0.5 text-xs font-mono font-medium hover:text-primary transition-colors cursor-pointer" title="点击恢复 100%">
+                100%
+              </button>
+              <button type="button" class="btn-zoom-in p-1.5 hover:bg-white/15 rounded-full transition-colors" title="放大 (+)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+              </button>
+              <div class="w-px h-4 bg-white/20 mx-1"></div>
+              <button type="button" class="btn-fit-screen px-2.5 py-1 text-xs hover:bg-white/15 rounded-full transition-colors font-sans" title="适应窗口">
+                适应
+              </button>
+              <button type="button" class="btn-reset-view px-2.5 py-1 text-xs hover:bg-white/15 rounded-full transition-colors font-sans" title="还原居中">
+                还原
+              </button>
+              <div class="w-px h-4 bg-white/20 mx-1"></div>
+              <button type="button" class="btn-close-lightbox p-1.5 hover:bg-rose-500/80 rounded-full transition-colors" title="关闭 (ESC)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          </header>
+
+          <!-- 舞台视口 (拖拽缩放漫游区) -->
+          <main class="lightbox-viewport relative w-full h-[calc(100vh-130px)] flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing">
+            <div class="lightbox-stage flex items-center justify-center transition-transform duration-75 ease-out will-change-transform">
+              <!-- SVG 克隆副本插入点 -->
+            </div>
+          </main>
+
+          <!-- 底部操作提示 -->
+          <footer class="text-white/60 text-xs tracking-wider pb-2 flex items-center gap-3">
+            <span>🖱️ 滚轮平滑缩放</span>
+            <span>·</span>
+            <span>✋ 按住左键拖拽平移</span>
+            <span>·</span>
+            <span>⚡ 双击恢复最佳居中</span>
+            <span>·</span>
+            <span>⌨️ ESC 退出</span>
+          </footer>
+        </div>
+      `
+
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = modalHtml
+      const el = tempDiv.firstElementChild as HTMLElement
+      document.body.appendChild(el)
+
+      this.modal = el
+      this.viewport = el.querySelector('.lightbox-viewport')
+      this.stage = el.querySelector('.lightbox-stage')
+      this.scaleIndicator = el.querySelector('.lightbox-scale-text')
+
+      this.bindModalEvents()
+    }
+
+    private bindModalEvents() {
+      if (!this.modal || !this.viewport) return
+
+      // 关闭事件
+      this.modal.querySelector('.btn-close-lightbox')?.addEventListener('click', () => this.close())
+      this.modal.addEventListener('click', (e) => {
+        if (e.target === this.modal || e.target === this.viewport) {
+          if (!this.hasMoved) {
+            this.close()
+          }
+        }
+      })
+
+      // 缩放按钮
+      this.modal.querySelector('.btn-zoom-in')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.zoom(1.25)
+      })
+      this.modal.querySelector('.btn-zoom-out')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.zoom(0.8)
+      })
+      this.scaleIndicator?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.scale = 1
+        this.updateTransform()
+      })
+      this.modal.querySelector('.btn-fit-screen')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.fitToScreen()
+      })
+      this.modal.querySelector('.btn-reset-view')?.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.resetView()
+      })
+
+      // 滚轮缩放 (以鼠标指针为中心平滑缩放)
+      this.viewport.addEventListener('wheel', (e) => {
+        e.preventDefault()
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87
+        this.zoomAt(zoomFactor, e.clientX, e.clientY)
+      }, { passive: false })
+
+      // 双击重置
+      this.viewport.addEventListener('dblclick', (e) => {
+        e.preventDefault()
+        this.fitToScreen()
+      })
+
+      // 鼠标拖拽漫游
+      this.viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return
+        this.isDragging = true
+        this.hasMoved = false
+        this.dragStartX = e.clientX - this.translateX
+        this.dragStartY = e.clientY - this.translateY
+      })
+
+      window.addEventListener('mousemove', (e) => {
+        if (!this.isDragging) return
+        this.hasMoved = true
+        this.translateX = e.clientX - this.dragStartX
+        this.translateY = e.clientY - this.dragStartY
+        this.updateTransform()
+      })
+
+      window.addEventListener('mouseup', () => {
+        this.isDragging = false
+      })
+
+      // 键盘快捷键监听
+      window.addEventListener('keydown', (e) => {
+        if (!this.modal || this.modal.classList.contains('hidden')) return
+        if (e.key === 'Escape') {
+          this.close()
+        } else if (e.key === '+' || e.key === '=') {
+          this.zoom(1.2)
+        } else if (e.key === '-' || e.key === '_') {
+          this.zoom(0.8)
+        } else if (e.key === '0') {
+          this.fitToScreen()
+        }
+      })
+
+      // 移动端多点触控与手势
+      this.viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          this.isDragging = true
+          this.hasMoved = false
+          this.dragStartX = e.touches[0].clientX - this.translateX
+          this.dragStartY = e.touches[0].clientY - this.translateY
+        } else if (e.touches.length === 2) {
+          this.isDragging = false
+          this.initialTouchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          )
+          this.initialTouchScale = this.scale
+        }
+      }, { passive: true })
+
+      this.viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && this.isDragging) {
+          this.hasMoved = true
+          this.translateX = e.touches[0].clientX - this.dragStartX
+          this.translateY = e.touches[0].clientY - this.dragStartY
+          this.updateTransform()
+        } else if (e.touches.length === 2 && this.initialTouchDistance > 0) {
+          const currentDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          )
+          const factor = currentDistance / this.initialTouchDistance
+          this.scale = Math.min(Math.max(this.initialTouchScale * factor, 0.2), 6.0)
+          this.updateTransform()
+        }
+      }, { passive: true })
+
+      this.viewport.addEventListener('touchend', () => {
+        this.isDragging = false
+        this.initialTouchDistance = 0
+      })
+    }
+
+    private updateTransform() {
+      if (!this.stage) return
+      this.stage.style.transform = `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`
+      if (this.scaleIndicator) {
+        this.scaleIndicator.textContent = `${Math.round(this.scale * 100)}%`
+      }
+    }
+
+    private zoom(factor: number) {
+      this.scale = Math.min(Math.max(this.scale * factor, 0.2), 6.0)
+      this.updateTransform()
+    }
+
+    private zoomAt(factor: number, clientX: number, clientY: number) {
+      if (!this.viewport) return
+      const rect = this.viewport.getBoundingClientRect()
+      const offsetX = clientX - rect.left - rect.width / 2
+      const offsetY = clientY - rect.top - rect.height / 2
+
+      const prevScale = this.scale
+      const newScale = Math.min(Math.max(this.scale * factor, 0.2), 6.0)
+      if (prevScale === newScale) return
+
+      // 以光标为锚点平移补偿
+      this.translateX -= (offsetX - this.translateX) * (newScale / prevScale - 1)
+      this.translateY -= (offsetY - this.translateY) * (newScale / prevScale - 1)
+      this.scale = newScale
+
+      this.updateTransform()
+    }
+
+    private fitToScreen() {
+      if (!this.viewport || !this.stage) return
+      const svg = this.stage.querySelector('svg')
+      if (!svg) {
+        this.resetView()
+        return
+      }
+
+      this.translateX = 0
+      this.translateY = 0
+
+      // 计算视口尺寸与 SVG 尺寸比
+      const vpWidth = this.viewport.clientWidth - 48
+      const vpHeight = this.viewport.clientHeight - 48
+
+      const svgBBox = svg.getBoundingClientRect()
+      const svgWidth = (svgBBox.width / this.scale) || 800
+      const svgHeight = (svgBBox.height / this.scale) || 600
+
+      const fitScale = Math.min(vpWidth / svgWidth, vpHeight / svgHeight, 1.4)
+      this.scale = Math.max(Math.min(fitScale, 2.5), 0.5)
+
+      this.updateTransform()
+    }
+
+    private resetView() {
+      this.scale = 1
+      this.translateX = 0
+      this.translateY = 0
+      this.updateTransform()
+    }
+
+    public open(svgElement: SVGSVGElement) {
+      this.initModal()
+      if (!this.modal || !this.stage) return
+
+      // 深拷贝一份 SVG
+      const cloneSvg = svgElement.cloneNode(true) as SVGSVGElement
+      cloneSvg.style.maxWidth = 'none'
+      cloneSvg.style.height = 'auto'
+      cloneSvg.style.display = 'block'
+      cloneSvg.style.margin = 'auto'
+      cloneSvg.removeAttribute('id') // 防止重复 id
+
+      // 清空并挂载克隆体
+      this.stage.innerHTML = ''
+      this.stage.appendChild(cloneSvg)
+
+      // 锁定页面滚动
+      document.body.style.overflow = 'hidden'
+
+      // 显示遮罩
+      this.modal.classList.remove('hidden')
+      requestAnimationFrame(() => {
+        this.modal?.classList.remove('opacity-0')
+        this.modal?.classList.add('opacity-100')
+        this.fitToScreen()
+      })
+    }
+
+    public close() {
+      if (!this.modal) return
+      this.modal.classList.remove('opacity-100')
+      this.modal.classList.add('opacity-0')
+      setTimeout(() => {
+        this.modal?.classList.add('hidden')
+        if (this.stage) this.stage.innerHTML = ''
+        document.body.style.overflow = ''
+      }, 300)
+    }
+  }
+
+  let lightboxInstance: MermaidLightbox | null = null
+
+  function getLightbox(): MermaidLightbox {
+    if (!lightboxInstance) {
+      lightboxInstance = new MermaidLightbox()
+    }
+    return lightboxInstance
+  }
+
+  // 动态加载并渲染 Mermaid 图表
   async function renderMermaidCharts() {
+    const mermaidWrappers = document.querySelectorAll<HTMLElement>('.mermaid-wrapper')
     const mermaidElements = document.querySelectorAll<HTMLElement>('.mermaid')
     if (mermaidElements.length === 0) return
 
     try {
-      // 动态导入 Mermaid 运行时 (仅在需要图表的页面按需加载)
       if (!mermaidInstance) {
         // @ts-ignore
         const module = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs')
@@ -37,10 +373,11 @@
           darkMode: isDark,
           background: 'transparent',
           fontFamily: 'inherit',
+          fontSize: '15px',
         },
       })
 
-      // 保存原始代码以支持深浅色模式切换时无损重绘
+      // 保存原始代码以支持主题切换重绘
       mermaidElements.forEach((el) => {
         if (!el.dataset.originalCode) {
           el.dataset.originalCode = el.textContent || ''
@@ -55,14 +392,50 @@
         querySelector: '.mermaid',
       })
 
-      // 渐显展示，消除生硬闪烁
-      mermaidElements.forEach((el) => {
-        el.classList.remove('opacity-0')
-        el.classList.add('opacity-100')
+      // 渲染后处理：渐显并注入交互按钮
+      const lightbox = getLightbox()
+
+      mermaidWrappers.forEach((wrapper) => {
+        const pre = wrapper.querySelector<HTMLElement>('.mermaid')
+        if (pre) {
+          pre.classList.remove('opacity-0')
+          pre.classList.add('opacity-100')
+        }
+
+        const svg = wrapper.querySelector<SVGSVGElement>('svg')
+        if (!svg) return
+
+        // 避免重复挂载按钮
+        if (!wrapper.querySelector('.mermaid-expand-btn')) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = 'mermaid-expand-btn absolute top-3 right-3 z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-secondary-content/80 hover:text-secondary-content bg-base-100/80 hover:bg-base-100 backdrop-blur-md border border-base-content/15 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200'
+          btn.title = '全屏查看与缩放'
+          btn.innerHTML = `
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            <span>点击放大</span>
+          `
+
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            lightbox.open(svg)
+          })
+
+          wrapper.appendChild(btn)
+        }
+
+        // 点击卡片任意位置唤起全屏
+        wrapper.onclick = (e) => {
+          // 如果点击的是已经存在的内部交互元素则不拦截
+          const target = e.target as HTMLElement
+          if (target.closest('.mermaid-expand-btn')) return
+          lightbox.open(svg)
+        }
       })
     } catch (err) {
       console.error('Mermaid render error:', err)
-      // 降级显示原始代码
       mermaidElements.forEach((el) => {
         el.classList.remove('opacity-0')
         el.classList.add('opacity-100')
@@ -70,18 +443,18 @@
     }
   }
 
-  // 初次加载与 DOM 就绪触发
+  // 初次加载与就绪监听
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', renderMermaidCharts)
   } else {
     renderMermaidCharts()
   }
 
-  // 兼容 Swup SPA 无刷新切页
+  // 兼容 Swup SPA 页面过渡
   document.addEventListener('swup:page:view', renderMermaidCharts)
   document.addEventListener('swup:content:replace', renderMermaidCharts)
 
-  // 监听深浅色主题切换并平滑重绘图表
+  // 监听系统/页面主题切换并自适应重绘
   const themeObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -99,13 +472,28 @@
 
 <style is:global>
   .mermaid-wrapper {
+    position: relative;
     max-width: 100%;
     margin-left: auto;
     margin-right: auto;
+    cursor: zoom-in;
+    user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mermaid-wrapper:hover {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
   }
   .mermaid-wrapper svg {
+    display: block;
+    margin: 0 auto;
     max-width: 100%;
     height: auto;
     border-radius: 0.5rem;
+  }
+  /* 灯箱内部 stage 下的 SVG 样式 */
+  .lightbox-stage svg {
+    max-width: none !important;
+    height: auto !important;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.35));
   }
 </style>
